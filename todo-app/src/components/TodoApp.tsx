@@ -1,17 +1,34 @@
 import { useState } from "react";
 import "./TodoApp.css";
 
+// 型定義
+type NewTodo = {
+  id: null;
+  title: string;
+  content: string;
+  tags: string[];
+};
+
+type ExistingTodo = {
+  id: number;
+  title: string;
+  content: string;
+  tags: string[];
+};
+
+type EditingTodo = NewTodo | ExistingTodo;
+
+// 型ガード関数
+function isNewTodo(todo: EditingTodo): todo is NewTodo {
+  return todo.id === null;
+}
+
+// Modalコンポーネント
 type ModalProps = {
   onClose: () => void;
   onSubmit: (editingTodo: EditingTodo) => void;
   editingTodo: EditingTodo;
   setEditingTodo: React.Dispatch<React.SetStateAction<EditingTodo>>;
-};
-type EditingTodo = {
-  id: number | null;
-  title: string;
-  content: string;
-  tags: string[];
 };
 
 const Modal = ({
@@ -20,7 +37,7 @@ const Modal = ({
   editingTodo,
   setEditingTodo,
 }: ModalProps) => {
-  const isCreating = !editingTodo;
+  const isCreating = isNewTodo(editingTodo);
 
   return (
     <div className="modal-overlay">
@@ -38,12 +55,7 @@ const Modal = ({
               type="text"
               value={editingTodo.title}
               onChange={(e) =>
-                setEditingTodo((prev) => {
-                  return {
-                    ...(prev ?? { id: null, title: "", content: "", tags: [] }),
-                    title: e.target.value,
-                  };
-                })
+                setEditingTodo((prev) => ({ ...prev, title: e.target.value }))
               }
             />
           </label>
@@ -52,16 +64,12 @@ const Modal = ({
             <textarea
               value={editingTodo.content}
               onChange={(e) =>
-                setEditingTodo((prev) => {
-                  return {
-                    ...(prev ?? { id: null, title: "", content: "", tags: [] }),
-                    content: e.target.value,
-                  };
-                })
+                setEditingTodo((prev) => ({ ...prev, content: e.target.value }))
               }
-            ></textarea>
+            />
           </label>
-          <button type="submit">登録/更新</button>
+
+          <button type="submit">{isCreating ? "登録" : "更新"}</button>
           <button type="button" onClick={onClose}>
             キャンセル
           </button>
@@ -71,27 +79,27 @@ const Modal = ({
   );
 };
 
+// Todoコンポーネント
 type TodoProps = {
-  todo: Todo;
-  onCardClick: (todo: Todo) => void;
+  todo: ExistingTodo;
+  onCardClick: (todo: ExistingTodo) => void;
   onCompButtonClick: (
-    e: React.MouseEvent<HTMLButtonElement, MouseEvent>,
-    todo: Todo
+    e: React.MouseEvent<HTMLButtonElement>,
+    todo: ExistingTodo
   ) => void;
 };
+
 const Todo = ({ todo, onCardClick, onCompButtonClick }: TodoProps) => {
   return (
     <div className="todo-card" onClick={() => onCardClick(todo)}>
       <h3>{todo.title}</h3>
       <p>{todo.content}</p>
       <div className="tag-container">
-        {todo.tags.map((tag) => {
-          return (
-            <div key={tag} className="tag-card">
-              {tag}
-            </div>
-          );
-        })}
+        {todo.tags.map((tag) => (
+          <div key={tag} className="tag-card">
+            {tag}
+          </div>
+        ))}
       </div>
       <button
         onClick={(e) => {
@@ -104,82 +112,58 @@ const Todo = ({ todo, onCardClick, onCompButtonClick }: TodoProps) => {
   );
 };
 
-type Todo = {
-  id: number;
-  title: string;
-  content: string;
-  tags: string[];
-};
-
-const iniTodo = {
+// 初期値
+const iniTodo: NewTodo = {
   id: null,
   title: "",
   content: "",
   tags: [],
 };
 
+// メインコンポーネント
 const TodoApp = () => {
-  const [todos, setTodos] = useState<Todo[]>([]);
+  const [todos, setTodos] = useState<ExistingTodo[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTodo, setEditingTodo] = useState<EditingTodo>(iniTodo);
 
-  // Todo登録/更新
+  // 登録/更新
   const handleTodoUpdate = (editingTodo: EditingTodo): void => {
-    debugger;
-    if (editingTodo.id === null) {
-      setTodos((prev) => [
-        ...prev,
-        {
-          id: new Date().getTime(),
-          title: editingTodo.title,
-          content: editingTodo.content,
-          tags: editingTodo.tags,
-        },
-      ]);
+    if (isNewTodo(editingTodo)) {
+      setTodos((prev) => [...prev, { ...editingTodo, id: Date.now() }]);
     } else {
-      setTodos((prev) => {
-        return prev.map((todo) => {
-          if (todo.id === editingTodo.id) {
-            return {
-              ...todo,
-              title: editingTodo.title,
-              content: editingTodo.content,
-              tags: editingTodo.tags,
-            };
-          } else {
-            return todo;
-          }
-        });
-      });
+      setTodos((prev) =>
+        prev.map((todo) =>
+          todo.id === editingTodo.id ? { ...todo, ...editingTodo } : todo
+        )
+      );
     }
-
     handleCloseModal();
   };
 
-  // Todoカードをクリックしたときの処理（更新用）
-  const handleTodoClick = (todo: Todo): void => {
-    setEditingTodo(todo); // クリックされたTodoを編集対象に設定
+  // Todoカードクリック（更新）
+  const handleTodoClick = (todo: ExistingTodo): void => {
+    setEditingTodo(todo);
     setIsModalOpen(true);
   };
 
-  // ＋ボタンをクリックしたときの処理（新規作成用）
+  // 新規作成ボタンクリック
   const handleCreateButtonClick = (): void => {
-    setEditingTodo(iniTodo); // 新規作成のため編集対象をnullに設定
+    setEditingTodo(iniTodo);
     setIsModalOpen(true);
   };
 
-  // モーダルを閉じる処理
+  // モーダル閉じる
   const handleCloseModal = (): void => {
     setIsModalOpen(false);
-    setEditingTodo(iniTodo); // モーダルを閉じるときに編集対象をリセット
+    setEditingTodo(iniTodo);
   };
 
-  // 完了ボタン
+  // 完了ボタンクリック
   const handleButtonClick = (
     e: React.MouseEvent<HTMLButtonElement>,
-    completedTodo: Todo
+    completedTodo: ExistingTodo
   ): void => {
-    e.stopPropagation(); // 親(Card)へのクリック伝搬を止める
+    e.stopPropagation();
     setTodos((prev) => prev.filter((todo) => todo.id !== completedTodo.id));
   };
 
@@ -191,16 +175,14 @@ const TodoApp = () => {
         <button>search</button>
       </div>
       <div className="todo-container">
-        {todos.map((todo) => {
-          return (
-            <Todo
-              key={todo.id}
-              todo={todo}
-              onCardClick={handleTodoClick}
-              onCompButtonClick={handleButtonClick}
-            />
-          );
-        })}
+        {todos.map((todo) => (
+          <Todo
+            key={todo.id}
+            todo={todo}
+            onCardClick={handleTodoClick}
+            onCompButtonClick={handleButtonClick}
+          />
+        ))}
       </div>
       <div className="create-todo-button-container">
         <button onClick={handleCreateButtonClick}>+</button>
@@ -209,7 +191,7 @@ const TodoApp = () => {
         <Modal
           onClose={handleCloseModal}
           onSubmit={handleTodoUpdate}
-          editingTodo={editingTodo} // editingTodoをpropsとして渡す
+          editingTodo={editingTodo}
           setEditingTodo={setEditingTodo}
         />
       )}
