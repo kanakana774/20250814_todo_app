@@ -1,242 +1,543 @@
-/* 基本的なスタイルリセットとフォント設定 */
+/*
+ * 全体設定
+ * - CSS変数を定義して、色やフォントサイズを一元管理
+ * - リセットCSSの代わりとなる基本的なスタイル
+ */
+:root {
+  --primary-color: #6a05ad; /* 主要な要素の色 (紫系) */
+  --accent-color: #00bcd4; /* アクセントカラー (シアン系) */
+  --text-color-dark: #333; /* 濃いテキスト色 */
+  --text-color-light: #f9f9f9; /* 明るいテキスト色 */
+  --background-color-light: #f5f7fa; /* 明るい背景色 */
+  --background-color-dark: #2c3e50; /* 暗い背景色 */
+  --card-background: #ffffff; /* カードの背景色 */
+  --modal-background: rgba(0, 0, 0, 0.6); /* モーダルのオーバーレイ背景色 */
+  --border-color: #e0e0e0; /* ボーダー色 */
+  --shadow-light: 0 4px 12px rgba(0, 0, 0, 0.08); /* 明るい影 */
+  --shadow-medium: 0 6px 16px rgba(0, 0, 0, 0.12); /* 中間の影 */
+  --border-radius-small: 8px; /* 小さめの角丸 */
+  --border-radius-medium: 12px; /* 中くらいの角丸 */
+  --font-family: "Inter", sans-serif; /* モダンなフォント */
+  --spacing-small: 10px;
+  --spacing-medium: 20px;
+  --spacing-large: 30px;
+}
+
 body {
+  font-family: var(--font-family);
+  background-color: var(--background-color-light);
+  color: var(--text-color-dark);
   margin: 0;
   padding: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial, sans-serif;
-  background-color: #f4f7f9;
-  color: #333;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-.todo-app-container {
-  max-width: 600px;
-  margin: 40px auto;
-  padding: 20px;
-  background-color: #fff;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-h1 {
-  text-align: center;
-  color: #2c3e50;
-  margin-bottom: 30px;
-}
-
-/* 検索フォーム */
-.form-container {
+/*
+ * アプリケーション全体のコンテナとレイアウト
+ * - 中央寄せと最大幅の設定
+ */
+.app-container {
   display: flex;
-  gap: 10px;
-  margin-bottom: 30px;
+  justify-content: center;
+  align-items: flex-start; /* 上部に配置 */
+  min-height: 100vh;
+  padding: var(--spacing-large);
+  box-sizing: border-box; /* paddingを含めて幅を計算 */
 }
 
-.form-container input {
-  flex-grow: 1;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  font-size: 16px;
-  transition: all 0.3s;
-}
-
-.form-container input:focus {
-  outline: none;
-  border-color: #3498db;
-  box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
-}
-
-.form-container button {
-  padding: 12px 20px;
-  background-color: #3498db;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-}
-
-.form-container button:hover {
-  background-color: #2980b9;
-}
-
-/* Todoカード一覧 */
-.todo-container {
+.main-content-wrapper {
+  background-color: var(--background-color-light);
+  padding: var(--spacing-large);
+  border-radius: var(--border-radius-medium);
+  box-shadow: var(--shadow-medium);
+  width: 100%;
+  max-width: 800px; /* アプリケーションの最大幅 */
   display: flex;
   flex-direction: column;
-  gap: 15px;
+  gap: var(--spacing-medium); /* 要素間の間隔 */
 }
 
-.todo-card {
-  padding: 20px;
-  background-color: #fafafa;
-  border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+/*
+ * タイトル
+ */
+.app-title {
+  text-align: center;
+  color: var(--primary-color);
+  margin-bottom: var(--spacing-medium);
+  font-size: 2.5em;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+/*
+ * 検索フォーム
+ * - 入力フィールドとボタンのレイアウト
+ */
+.search-form-container {
+  display: flex;
+  gap: var(--spacing-small);
+  margin-bottom: var(--spacing-medium);
+}
+
+.search-input {
+  flex-grow: 1;
+  padding: var(--spacing-small) var(--spacing-medium);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-small);
+  font-size: 1em;
+  outline: none;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.search-input:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(106, 5, 173, 0.2); /* フォーカス時の影 */
+}
+
+.search-button {
+  padding: var(--spacing-small) var(--spacing-medium);
+  background-color: var(--primary-color);
+  color: var(--text-color-light);
+  border: none;
+  border-radius: var(--border-radius-small);
   cursor: pointer;
-  transition: transform 0.2s, box-shadow 0.2s;
-  border-left: 5px solid #e74c3c; /* 重要度を示す色 */
+  font-size: 1em;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  min-width: 80px;
+}
+
+.search-button:hover {
+  background-color: #55048d; /* ホバー時の色 */
+  transform: translateY(-2px);
+}
+
+.search-button:active {
+  transform: translateY(0);
+}
+
+/*
+ * Todoグリッド
+ * - Todoカードのレスポンシブな配置
+ */
+.todo-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(280px, 1fr)
+  ); /* 最小280pxで自動配置 */
+  gap: var(--spacing-medium);
+  margin-top: var(--spacing-small);
+}
+
+.no-todos-message {
+  grid-column: 1 / -1; /* グリッド全体に広がる */
+  text-align: center;
+  color: #777;
+  padding: var(--spacing-large);
+  font-size: 1.1em;
+  background-color: #f0f0f0;
+  border-radius: var(--border-radius-small);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/*
+ * 個々のTodoカード
+ * - カードのデザインとインタラクション
+ */
+.todo-card {
+  background-color: var(--card-background);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-medium);
+  padding: var(--spacing-medium);
+  box-shadow: var(--shadow-light);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  position: relative; /* 完了ボタンの配置のため */
 }
 
 .todo-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-medium);
 }
 
 .todo-card h3 {
-  margin: 0 0 10px 0;
-  color: #34495e;
+  color: var(--primary-color);
+  margin-top: 0;
+  margin-bottom: var(--spacing-small);
+  font-size: 1.4em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .todo-card p {
-  margin: 0 0 15px 0;
-  color: #7f8c8d;
+  color: var(--text-color-dark);
+  font-size: 0.95em;
+  margin-bottom: var(--spacing-small);
+  flex-grow: 1; /* 内容が長い場合に高さを調整 */
+  word-break: break-word; /* 長い単語の折り返し */
 }
 
-/* タグ */
-.tag-container {
+/*
+ * タグのリスト
+ */
+.tag-list {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  margin-bottom: 15px;
+  margin-bottom: var(--spacing-small);
 }
 
-.tag-card {
+.tag-item {
+  background-color: var(--accent-color);
+  color: var(--text-color-light);
   padding: 5px 10px;
-  font-size: 12px;
-  color: #fff;
-  background-color: #95a5a6;
-  border-radius: 5px;
+  border-radius: var(--border-radius-small);
+  font-size: 0.8em;
+  font-weight: 600;
+  opacity: 0.9;
+  transition: opacity 0.2s ease;
 }
 
-/* 完了ボタン */
-.todo-card button {
+.tag-item:hover {
+  opacity: 1;
+}
+
+/*
+ * 完了ボタン
+ */
+.complete-button {
+  background-color: #e74c3c; /* 赤系 */
+  color: var(--text-color-light);
+  border: none;
+  border-radius: var(--border-radius-small);
   padding: 8px 15px;
-  background-color: #2ecc71;
-  color: white;
-  border: none;
-  border-radius: 6px;
   cursor: pointer;
-  float: right;
-  transition: background-color 0.3s;
+  font-size: 0.9em;
+  font-weight: 600;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+  align-self: flex-end; /* 右下寄せ */
+  margin-top: var(--spacing-small);
 }
 
-.todo-card button:hover {
-  background-color: #27ae60;
+.complete-button:hover {
+  background-color: #c0392b;
+  transform: translateY(-2px);
 }
 
-/* ＋ボタン（新規作成） */
-.create-todo-button-container {
-  text-align: center;
-  margin-top: 30px;
+.complete-button:active {
+  transform: translateY(0);
 }
 
-.create-todo-button-container button {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
+/*
+ * 新規Todo作成ボタン (+)
+ */
+.create-button-container {
+  position: fixed; /* 画面の右下に固定 */
+  bottom: var(--spacing-large);
+  right: var(--spacing-large);
+  z-index: 1000; /* 他の要素より手前に */
+}
+
+.create-button {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%; /* 円形 */
+  background-color: var(--primary-color);
+  color: var(--text-color-light);
+  font-size: 2.5em;
+  line-height: 1; /* 行の高さを調整 */
   border: none;
-  background-color: #3498db;
-  color: white;
-  font-size: 30px;
-  font-weight: bold;
+  box-shadow: var(--shadow-medium);
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
-  transition: transform 0.2s, background-color 0.3s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transition: background-color 0.3s ease, transform 0.2s ease,
+    box-shadow 0.3s ease;
 }
 
-.create-todo-button-container button:hover {
-  background-color: #2980b9;
-  transform: rotate(90deg);
+.create-button:hover {
+  background-color: #55048d;
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
 }
 
-/* モーダルオーバーレイ（画面全体を覆う半透明の背景） */
+.create-button:active {
+  transform: translateY(0);
+  box-shadow: var(--shadow-light);
+}
+
+/*
+ * モーダルオーバーレイと内容
+ * - ポップアップウィンドウの背景と内部要素
+ */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.6);
+  background-color: var(--modal-background);
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 2000;
+  backdrop-filter: blur(5px); /* 背景を少しぼかす */
 }
 
-/* モーダルの内容 */
 .modal-content {
-  background-color: #fff;
-  padding: 30px;
-  border-radius: 12px;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+  background-color: var(--card-background);
+  padding: var(--spacing-large);
+  border-radius: var(--border-radius-medium);
+  box-shadow: var(--shadow-medium);
   width: 90%;
-  max-width: 450px;
-  transform: scale(0.9);
-  animation: modal-open 0.3s forwards ease-out;
+  max-width: 500px;
+  animation: fadeInScale 0.3s ease-out forwards; /* 表示アニメーション */
+  box-sizing: border-box;
 }
 
-@keyframes modal-open {
+.modal-content h2 {
+  color: var(--primary-color);
+  text-align: center;
+  margin: 0 auto;
+  margin-top: 0;
+  margin-bottom: var(--spacing-large);
+  font-size: 1.8em;
+}
+
+/*
+ * モーダルフォームグループ
+ * - 各入力フィールドのまとまり
+ */
+.modal-form-group {
+  margin-bottom: var(--spacing-medium);
+  display: block; /* labelをブロック要素に */
+}
+
+.modal-form-group label {
+  display: block;
+  margin-bottom: var(--spacing-small);
+  font-weight: 600;
+  color: var(--text-color-dark);
+}
+
+.modal-form-group span {
+  display: block; /* "タイトル:"や"内容:"のテキストを独立させる */
+  margin-bottom: 5px;
+  font-size: 0.95em;
+  color: #555;
+}
+
+.modal-input,
+.modal-textarea {
+  width: calc(100% - 20px); /* paddingを考慮 */
+  padding: var(--spacing-small);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-small);
+  font-size: 1em;
+  outline: none;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.modal-input:focus,
+.modal-textarea:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(106, 5, 173, 0.2);
+}
+
+.modal-textarea {
+  resize: vertical; /* 縦方向のみリサイズ可能 */
+  min-height: 80px;
+}
+
+/*
+ * モーダル内のタグ選択
+ */
+.modal-tag-label {
+  display: block;
+  margin-bottom: var(--spacing-small);
+  font-weight: 600;
+  color: var(--text-color-dark);
+}
+
+.modal-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px; /* 各タグボタン間の間隔 */
+}
+
+.modal-tag-item {
+  /* チェックボックスとラベルのラッパー。ボタンの視覚的スタイルはラベルに移動するため、ここではコンテナの役割のみ。 */
+  display: flex;
+  align-items: center;
+}
+
+/* チェックボックス自体を完全に非表示にする */
+.modal-checkbox {
+  display: none;
+}
+
+/* ラベルをタグボタンのようにスタイリング */
+.modal-checkbox-label {
+  cursor: pointer;
+  background-color: #f0f0f0; /* デフォルトのボタン背景色 */
+  color: var(--text-color-dark); /* デフォルトのボタンテキスト色 */
+  padding: 8px 12px; /* ボタンのパディング */
+  border-radius: var(--border-radius-small); /* ボタンの角丸 */
+  font-size: 0.95em;
+  font-weight: 500;
+  border: 1px solid var(--border-color); /* ボタンのボーダー */
+  transition: background-color 0.2s ease, color 0.2s ease,
+    border-color 0.2s ease, box-shadow 0.2s ease;
+  white-space: nowrap; /* テキストが改行されないように */
+}
+
+/* ホバー時のスタイル */
+.modal-checkbox-label:hover {
+  background-color: #e5e5e5;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* チェックされた（選択された）時のスタイル */
+.modal-checkbox:checked + .modal-checkbox-label {
+  background-color: var(--primary-color);
+  color: var(--text-color-light);
+  border-color: var(--primary-color);
+  box-shadow: 0 2px 6px rgba(106, 5, 173, 0.3);
+}
+
+/*
+ * モーダル内のボタン
+ */
+.modal-buttons {
+  display: flex;
+  justify-content: flex-end; /* 右寄せ */
+  gap: var(--spacing-small);
+  margin-top: var(--spacing-medium);
+}
+
+.modal-submit-button,
+.modal-cancel-button {
+  padding: var(--spacing-small) var(--spacing-medium);
+  border: none;
+  border-radius: var(--border-radius-small);
+  cursor: pointer;
+  font-size: 1em;
+  font-weight: 600;
+  transition: background-color 0.3s ease, transform 0.2s ease;
+}
+
+.modal-submit-button {
+  background-color: var(--primary-color);
+  color: var(--text-color-light);
+}
+
+.modal-submit-button:hover {
+  background-color: #55048d;
+  transform: translateY(-2px);
+}
+
+.modal-cancel-button {
+  background-color: #ccc;
+  color: var(--text-color-dark);
+}
+
+.modal-cancel-button:hover {
+  background-color: #b3b3b3;
+  transform: translateY(-2px);
+}
+
+.modal-submit-button:active,
+.modal-cancel-button:active {
+  transform: translateY(0);
+}
+
+/*
+ * アニメーション
+ */
+@keyframes fadeInScale {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
   to {
+    opacity: 1;
     transform: scale(1);
   }
 }
 
-.modal-content h2 {
-  margin-top: 0;
-  margin-bottom: 25px;
-  color: #34495e;
-  text-align: center;
+/*
+ * レスポンシブデザインの調整
+ */
+@media (max-width: 768px) {
+  .main-content-wrapper {
+    padding: var(--spacing-medium);
+  }
+
+  .app-title {
+    font-size: 2em;
+  }
+
+  .todo-grid {
+    grid-template-columns: 1fr; /* 1カラム表示 */
+  }
+
+  .search-form-container {
+    flex-direction: column; /* 縦に並べる */
+  }
+
+  .search-button {
+    width: 100%;
+  }
+
+  .create-button-container {
+    bottom: var(--spacing-medium);
+    right: var(--spacing-medium);
+  }
+
+  .create-button {
+    width: 50px;
+    height: 50px;
+    font-size: 2em;
+  }
+
+  .modal-content {
+    padding: var(--spacing-medium);
+  }
+
+  .modal-content h2 {
+    font-size: 1.5em;
+  }
+
+  .modal-input,
+  .modal-textarea {
+    width: calc(100% - 16px); /* paddingを調整 */
+  }
 }
 
-/* フォームのスタイル */
-.modal-content form label {
-  display: block;
-  margin-bottom: 15px;
-  font-weight: bold;
-  color: #555;
-}
+@media (max-width: 480px) {
+  .app-container {
+    padding: var(--spacing-small);
+  }
 
-.modal-content form input,
-.modal-content form textarea {
-  width: 100%;
-  padding: 10px;
-  margin-top: 5px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  box-sizing: border-box; /* paddingを含めて幅を計算 */
-  font-size: 16px;
-}
+  .main-content-wrapper {
+    padding: var(--spacing-small);
+  }
 
-.modal-content form textarea {
-  resize: vertical;
-  min-height: 100px;
-}
+  .app-title {
+    font-size: 1.8em;
+  }
 
-/* モーダル内のボタン */
-.modal-content form button {
-  width: 100%;
-  padding: 12px;
-  border: none;
-  border-radius: 8px;
-  font-size: 16px;
-  font-weight: bold;
-  cursor: pointer;
-  margin-top: 15px;
-  transition: background-color 0.3s;
-}
+  .todo-card {
+    padding: var(--spacing-small);
+  }
 
-.modal-content form button[type="submit"] {
-  background-color: #3498db;
-  color: white;
-}
-
-.modal-content form button[type="submit"]:hover {
-  background-color: #2980b9;
-}
-
-.modal-content form button[type="button"] {
-  background-color: #95a5a6;
-  color: white;
-}
-
-.modal-content form button[type="button"]:hover {
-  background-color: #7f8c8d;
+  .modal-content {
+    padding: var(--spacing-small);
+  }
 }
