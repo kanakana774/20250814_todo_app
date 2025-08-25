@@ -1,0 +1,19 @@
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="jp.aevic.todo.mapper.todo.TodoTagMapper">
+        <insert id="insertTodoTag" parameterType="java.util.List">
+                INSERT INTO
+                	TODO_TAG (TODO_ID, TAG_ID)
+                VALUES
+                        <foreach collection="list" item="todoTag" separator=",">
+                	        (#{todoTag.todoId}, #{todoTag.tagId})
+                        </foreach>
+        </insert>
+        
+        <delete id="deleteTodoTagByTodoId" parameterType="int">
+                DELETE FROM TODO_TAG
+                WHERE
+                	TODO_ID = #{todoId}
+        </delete>
+</mapper>

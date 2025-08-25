@@ -1,0 +1,79 @@
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="jp.aevic.todo.mapper.tag.TagMapper">
+        <insert id="insertTag" parameterType="jp.aevic.todo.entity.tag.TagEntity" useGeneratedKeys="true" keyProperty="tagId">
+                INSERT INTO
+                        TAG (
+                                NAME
+                                ,VERSION
+                        )
+                        VALUES (
+                                #{name}
+                                ,#{version}
+                        )
+        </insert>
+
+        <select id="selectById" parameterType="int" resultType="jp.aevic.todo.entity.tag.TagEntity">
+                SELECT
+                        TAG_ID
+                        , NAME
+                        , VERSION
+                FROM
+                        TAG
+                WHERE
+                        TAG_ID = #{tagId}
+        </select>
+
+        <select id="selectByIds" parameterType="int" resultType="jp.aevic.todo.entity.tag.TagEntity">
+                SELECT
+                        TAG_ID
+                        , NAME
+                        , VERSION
+                FROM
+                        TAG
+                WHERE
+                        TAG_ID IN
+                        <foreach item="tagId" collection="tagIds" open="(" separator="," close=")">
+                                #{tagId}
+                        </foreach>
+        </select>
+
+        <select id="selectAll" resultMap="selectAllResultMap">
+                SELECT
+                        TAG_ID
+                        , NAME
+                        , VERSION
+                FROM
+                        TAG
+                <if test="name != null and name != ''">
+                        WHERE
+                                NAME ILIKE CONCAT('%', #{name}, '%')
+                </if>
+                ORDER BY TAG_ID
+        </select>
+        <resultMap id="selectAllResultMap" type="jp.aevic.todo.entity.tag.TagEntity">
+                <id property="tagId" column="TAG_ID"/>
+                <result property="name" column="NAME"/>
+                <result property="version" column="VERSION"/>
+        </resultMap>
+
+        <update id="updateTag" parameterType="jp.aevic.todo.entity.tag.TagEntity">
+                UPDATE
+                        TAG
+                SET
+                        NAME = #{name}
+                        , VERSION = VERSION + 1
+                WHERE
+                        TAG_ID = #{tagId}
+                        AND VERSION = #{version}
+        </update>
+
+        <delete id="deleteTag" parameterType="jp.aevic.todo.entity.tag.TagEntity">
+                DELETE FROM
+                        TAG
+                WHERE
+                        TAG_ID = #{tagId}
+                        AND VERSION = #{version}
+        </delete>
+</mapper>

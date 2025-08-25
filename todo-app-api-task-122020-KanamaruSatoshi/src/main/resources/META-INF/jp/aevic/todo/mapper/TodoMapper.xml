@@ -1,0 +1,100 @@
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="jp.aevic.todo.mapper.todo.TodoMapper">
+        <insert id="insertTodo" parameterType="jp.aevic.todo.entity.todo.TodoEntity" useGeneratedKeys="true" keyProperty="todoId">
+                INSERT INTO
+                	TODO (TITLE, CONTENT, VERSION)
+                VALUES
+                	(#{title}, #{content}, #{version})
+        </insert>
+
+        <select id = "selectById" resultMap = "todoWithTagsMap">
+                SELECT
+                	TODO.TODO_ID,
+                	TODO.TITLE,
+                	TODO.CONTENT,
+                	TODO.VERSION,
+                	TAG.TAG_ID,
+                	TAG.NAME,
+                	TAG.VERSION
+                FROM
+                	TODO
+                	LEFT JOIN TODO_TAG ON TODO.TODO_ID = TODO_TAG.TODO_ID
+                	LEFT JOIN TAG ON TODO_TAG.TAG_ID = TAG.TAG_ID
+                WHERE
+                	TODO.TODO_ID = #{todoId}
+        </select>
+        <resultMap id="todoWithTagsMap" type="jp.aevic.todo.entity.todo.TodoEntity">
+                <id column="TODO_ID" property="todoId"/>
+                <result column="TITLE" property="title"/>
+                <result column="CONTENT" property="content"/>
+                <result column="VERSION" property="version"/>
+                <collection property="tags" ofType="jp.aevic.todo.entity.tag.TagEntity" notNullColumn="TAG_ID">
+                        <id column="TAG_ID" property="tagId"/>
+                        <result column="NAME" property="name"/>
+                        <result column="VERSION" property="version"/>
+                </collection>
+        </resultMap>
+
+        <select id = "selectAll" resultMap = "todosWithTagsMap">
+                SELECT
+                	TODO.TODO_ID,
+                	TODO.TITLE,
+                	TODO.CONTENT,
+                	TODO.VERSION,
+                	TAG.TAG_ID,
+                	TAG.NAME,
+                	TAG.VERSION
+                FROM
+                	(
+                                SELECT
+                	                TODO_ID,
+                	                TITLE,
+                	                CONTENT,
+                	                VERSION
+                                FROM
+                                        TODO
+                                <if test="title != null and title != ''">
+                                        WHERE
+                                                TITLE ILIKE CONCAT('%', #{title}, '%')
+                                </if>
+                                ORDER BY TODO_ID
+                                <if test="limit != null and limit != ''">
+                                        LIMIT #{limit}
+                                </if>
+                        ) TODO  
+                	LEFT JOIN TODO_TAG ON TODO.TODO_ID = TODO_TAG.TODO_ID
+                	LEFT JOIN TAG ON TODO_TAG.TAG_ID = TAG.TAG_ID
+                ORDER BY TODO.TODO_ID
+        </select>
+        <resultMap id="todosWithTagsMap" type="jp.aevic.todo.entity.todo.TodoEntity">
+                <id column="TODO_ID" property="todoId"/>
+                <result column="TITLE" property="title"/>
+                <result column="CONTENT" property="content"/>
+                <result column="VERSION" property="version"/>
+                <collection property="tags" ofType="jp.aevic.todo.entity.tag.TagEntity" notNullColumn="TAG_ID">
+                        <id column="TAG_ID" property="tagId"/>
+                        <result column="NAME" property="name"/>
+                        <result column="VERSION" property="version"/>
+                </collection>
+        </resultMap>
+
+        <update id="updateTodo" parameterType="jp.aevic.todo.entity.todo.TodoEntity">
+                UPDATE TODO
+                SET
+                	TITLE = #{title},
+                        CONTENT = #{content},
+                	VERSION = VERSION + 1
+                WHERE
+                	TODO_ID = #{todoId}
+                	AND VERSION = #{version}
+        </update>
+
+        <delete id="deleteTodo" parameterType="jp.aevic.todo.entity.todo.TodoEntity">
+                DELETE FROM TODO
+                WHERE
+                	TODO_ID = #{todoId}
+                	AND VERSION = #{version}
+        </delete>
+</mapper>
