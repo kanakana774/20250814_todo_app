@@ -3,43 +3,50 @@ import "./TodoApp.css";
 import axios from "axios";
 
 // ===============================================
-// 型定義
+// 型定義（バックエンド）
 // ===============================================
 
-// タグの型定義
-type Tag = {
-  tag_id: number;
+interface TagEntity {
+  tagId: number;
   name: string;
-};
-
-// Todoの基本型
-type BaseTodo = {
+  version: number;
+}
+interface TodoEntity {
+  todoId: number;
   title: string;
   content: string;
-  tags: Tag[];
-};
+  version: number;
+  tags: TagEntity[];
+}
+// ===============================================
+// 型定義（フロントエンド）
+// ===============================================
 
-// 新規作成用のTodo（idがない）
-type NewTodo = BaseTodo & {
-  todoId: null;
-};
-
-// 既存のTodo（idがある）
-type ExistingTodo = BaseTodo & {
+interface SelectedTag {
+  tagId: number;
+  name: string;
+}
+interface BaseTodoForm {
+  title: string;
+  content: string;
+  tags: SelectedTag[];
+}
+interface PostTodoForm extends BaseTodoForm {
+  type: "newTodo";
+}
+interface PutTodoForm extends BaseTodoForm {
+  type: "existingTodo";
   todoId: number;
   version: number;
-};
-
-// 編集中のTodoはどちらかの型になる
-type EditingTodo = NewTodo | ExistingTodo;
-
-// TodoAppコンポーネントが管理するTodosはidがあるものだけ
-type Todo = ExistingTodo;
-
-// 型ガード関数 (新規Todoか既存Todoかを判定)
-function isNewTodo(todo: EditingTodo): todo is NewTodo {
-  return todo.todoId === null;
 }
+type EditingTodoForm = PostTodoForm | PutTodoForm;
+
+// request
+type PostTodoRequest = Omit<PostTodoForm, "type">;
+type PutTodoRequest = Omit<PutTodoForm, "type">;
+
+// responce
+type TodoResponse = TodoEntity;
 
 // ===============================================
 // Modalコンポーネント (Todoの登録・更新フォーム)
@@ -47,9 +54,9 @@ function isNewTodo(todo: EditingTodo): todo is NewTodo {
 
 type ModalProps = {
   onClose: () => void;
-  onSubmit: (editingTodo: EditingTodo) => void;
-  editingTodo: NewTodo | ExistingTodo;
-  availableTags: Tag[];
+  onSubmit: (editingTodoForm: EditingTodoForm) => void;
+  editingTodo: EditingTodoForm;
+  availableTags: TagEntity[];
 };
 
 const Modal = ({
@@ -60,37 +67,35 @@ const Modal = ({
 }: ModalProps) => {
   // モーダル内部のフォーム状態
   const [todoForm, setTodoForm] = useState(editingTodo);
-  // 新規作成モードかどうかの判定
-  const isCreating = isNewTodo(editingTodo);
 
   // propsのeditingTodoが変更されたら、内部のフォーム状態を同期する
-  // これにより、別のTodoを編集する際にフォームの内容が正しくリセットされます
+  // これにより、別のTodoを編集する際にフォームの内容が正しくリセットされる
   useEffect(() => {
     setTodoForm(editingTodo);
   }, [editingTodo]);
 
   // 入力フィールドの変更ハンドラ
-  const handleChange = (
+  const handleTodoChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
+  ): void => {
     const { name, value } = e.target;
     // jsの算出プロパティ名記法
-    // オブジェクトのプロパティを動的に変えたい場合、角括弧 [] の中に式を記述することができ、それが計算されてプロパティ名として使用されます
+    // オブジェクトのプロパティを動的に変えたい場合、角括弧 [] の中に式を記述することができ、それが計算されてプロパティ名として使用される
     setTodoForm((prev) => ({ ...prev, [name]: value }));
   };
 
   // タグの選択/解除ハンドラ (IDで管理)
-  const handleTagChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleTagChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
     const { id, checked } = e.target;
     const tagId = parseInt(id.replace("tag-", ""), 10); // IDを数値に変換
-    const selectedTag = availableTags.find((tag) => tag.tag_id === tagId);
+    const selectedTag = availableTags.find((tag) => tag.tagId === tagId);
 
     if (!selectedTag) return; // 見つからない場合は何もしない
 
     setTodoForm((prev) => {
       const newTags = checked
         ? [...prev.tags, selectedTag] // タグオブジェクト全体を追加
-        : prev.tags.filter((t) => t.tag_id !== selectedTag.tag_id); // IDでフィルタリングして削除
+        : prev.tags.filter((t) => t.tagId !== selectedTag.tagId); // IDでフィルタリングして削除
 
       return { ...prev, tags: newTags };
     });
@@ -100,7 +105,7 @@ const Modal = ({
     <div className="modal-overlay">
       <div className="modal-content">
         <h2 className="modal-title">
-          {isCreating ? "新しいTodoを登録" : "Todoを更新"}
+          {todoForm.type === "newTodo" ? "新しいTodoを登録" : "Todoを更新"}
         </h2>
         <form
           onSubmit={(e) => {
@@ -110,23 +115,23 @@ const Modal = ({
           className="modal-form"
         >
           <label className="modal-label-input-group">
-            タイトル:
+            タイトル:{" "}
             <input
               type="text"
               name="title"
               value={todoForm.title}
-              onChange={handleChange}
+              onChange={handleTodoChange}
               className="modal-input"
               placeholder="Todoのタイトル"
             />
           </label>
 
           <label className="modal-label-input-group">
-            内容:
+            内容:{" "}
             <textarea
               name="content"
               value={todoForm.content}
-              onChange={handleChange}
+              onChange={handleTodoChange}
               rows={4}
               className="modal-textarea"
               placeholder="Todoの詳細内容"
@@ -139,18 +144,18 @@ const Modal = ({
             <span className="modal-tag-label">タグ:</span>
             <div className="modal-tag-list">
               {availableTags.map((tag) => (
-                <div key={tag.tag_id} className="modal-tag-item">
+                <div key={tag.tagId} className="modal-tag-item">
                   {" "}
                   <input
                     type="checkbox"
-                    id={`tag-${tag.tag_id}`} // IDを文字列として使用
+                    id={`tag-${tag.tagId}`} // IDを文字列として使用
                     value={tag.name} // valueはタグ名
-                    checked={todoForm.tags.some((t) => t.tag_id === tag.tag_id)} // IDで選択されているか判定
+                    checked={todoForm.tags.some((t) => t.tagId === tag.tagId)} // IDで選択されているか判定
                     onChange={handleTagChange}
                     className="modal-checkbox"
                   />
                   <label
-                    htmlFor={`tag-${tag.tag_id}`}
+                    htmlFor={`tag-${tag.tagId}`}
                     className="modal-checkbox-label"
                   >
                     {tag.name}
@@ -163,7 +168,7 @@ const Modal = ({
           {/* ボタン群 */}
           <div className="modal-buttons">
             <button type="submit" className="modal-submit-button">
-              {isCreating ? "登録" : "更新"}
+              {todoForm.type === "newTodo" ? "登録" : "更新"}
             </button>
             <button
               type="button"
@@ -180,32 +185,32 @@ const Modal = ({
 };
 
 // ===============================================
-// Todoコンポーネント (個々のTodoカード) - 以前の提案を統合
+// Todoコンポーネント (個々のTodoカード)
 // ===============================================
 
 type TodoProps = {
-  todo: ExistingTodo;
-  onCardClick: (todo: ExistingTodo) => void;
+  todo: PutTodoForm;
+  onTodoCardClick: (todo: PutTodoForm) => void;
   onCompButtonClick: (
     e: React.MouseEvent<HTMLButtonElement>,
-    todo: ExistingTodo
+    todo: PutTodoForm
   ) => void;
 };
 
-const Todo = ({ todo, onCardClick, onCompButtonClick }: TodoProps) => {
+const Todo = ({ todo, onTodoCardClick, onCompButtonClick }: TodoProps) => {
   return (
     // divにrole="button"とtabIndex="0"を追加することでアクセシビリティを向上
     // role="button": スクリーンリーダーにボタンとして認識させる
     // tabIndex="0": キーボードのTabキーでフォーカスできるようにする
     <div
       className="todo-card"
-      onClick={() => onCardClick(todo)}
+      onClick={() => onTodoCardClick(todo)}
       role="button"
       tabIndex={0} // キーボード操作を可能にする
       // EnterキーやSpaceキーでの操作も可能にする (ReactのonClickはこれらを自動的に処理する場合が多い)
       onKeyDown={(e) => {
         if (e.key === "Enter" || e.key === " ") {
-          onCardClick(todo);
+          onTodoCardClick(todo);
         }
       }}
     >
@@ -214,7 +219,7 @@ const Todo = ({ todo, onCardClick, onCompButtonClick }: TodoProps) => {
       <div className="tag-list">
         {todo.tags.map((tag) => (
           <div
-            key={tag.tag_id} // keyにtag.idを使用
+            key={tag.tagId} // keyにtag.idを使用
             className="tag-item"
           >
             {tag.name}
@@ -223,7 +228,7 @@ const Todo = ({ todo, onCardClick, onCompButtonClick }: TodoProps) => {
       </div>
       <button
         onClick={(e) => {
-          // e.stopPropagation(); // 親(Todoカード)へのクリック伝搬を止める。これは非常に重要。
+          // e.stopPropagation(); // 親(Todoカード)へのクリック伝搬を止める。
           onCompButtonClick(e, todo);
         }}
         className="complete-button"
@@ -283,8 +288,8 @@ const SearchForm = ({ onSearch }: SearchFormProps) => {
 // 初期値
 // ===============================================
 
-const iniTodo: NewTodo = {
-  todoId: null,
+const newTodo: PostTodoForm = {
+  type: "newTodo",
   title: "",
   content: "",
   tags: [],
@@ -295,89 +300,107 @@ const iniTodo: NewTodo = {
 // ===============================================
 
 // 利用可能なタグのリスト
-const availableTags: Tag[] = [
-  { tag_id: 1, name: "#仕事" },
-  { tag_id: 2, name: "#プライベート" },
-  { tag_id: 3, name: "#緊急" },
-  { tag_id: 4, name: "#買い物" },
-  { tag_id: 5, name: "#学習" },
+const availableTags: TagEntity[] = [
+  { tagId: 1, name: "#仕事", version: 0 },
+  { tagId: 2, name: "#プライベート", version: 0 },
+  { tagId: 3, name: "#緊急", version: 0 },
+  { tagId: 4, name: "#買い物", version: 0 },
+  { tagId: 5, name: "#学習", version: 0 },
 ];
 
 const TodoApp = () => {
-  const [todos, setTodos] = useState<Todo[]>([]);
+  const [todos, setTodos] = useState<TodoEntity[]>([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingTodo, setEditingTodo] = useState<EditingTodo>(iniTodo);
+  const [editingTodo, setEditingTodo] = useState<EditingTodoForm>(newTodo);
 
   // 初期表示
   useEffect(() => {
     fetchTodos();
   }, []);
 
-  // fetch
-  const fetchTodos = async () => {
+  // todo取得
+  const fetchTodos = async (): Promise<void> => {
     try {
-      const response = await axios.get<Todo[]>("http://localhost:8080/todos");
-      setTodos(response.data);
+      const response = await axios.get<TodoResponse[]>(
+        "http://localhost:8080/todos"
+      );
+      setTodos(mapTodoResponseToEntity(response.data));
     } catch (error) {
       console.error("Todoの全件取得に失敗しました:", error);
     }
   };
 
+  // 変換
+  const mapTodoResponseToEntity = (responses: TodoResponse[]): TodoEntity[] => {
+    return responses.map((res) => ({
+      todoId: res.todoId,
+      title: res.title,
+      content: res.content,
+      version: res.version,
+      tags: res.tags,
+    }));
+  };
+
   // Todoの登録/更新処理
-  const handleTodoUpdate = async (editingTodo: EditingTodo): Promise<void> => {
-    if (isNewTodo(editingTodo)) {
-      try {
-        // POSTリクエストで新しいTodoを登録
-        await axios.post<Todo>("http://localhost:8080/todos", {
-          title: editingTodo.title,
-          content: editingTodo.content,
-          tags: editingTodo.tags,
-        });
-      } catch (error) {
-        console.error("Todoの登録に失敗しました:", error);
-      }
-    } else {
-      try {
-        // PUTリクエストで新しいTodoを登録
-        await axios.put<Todo>(
-          `http://localhost:8080/todos/${editingTodo.todoId}`,
-          {
+  const handleTodoSubmit = async (
+    editingTodo: EditingTodoForm
+  ): Promise<void> => {
+    switch (editingTodo.type) {
+      case "newTodo":
+        try {
+          // POSTリクエストで新しいTodoを登録
+          await axios.post<PostTodoRequest>("http://localhost:8080/todos", {
             title: editingTodo.title,
             content: editingTodo.content,
-            version: editingTodo.version,
             tags: editingTodo.tags,
-          }
-        );
-      } catch (error) {
-        console.error("Todoの更新に失敗しました:", error);
-      }
+          });
+        } catch (error) {
+          console.error("Todoの登録に失敗しました:", error);
+        }
+        break;
+      case "existingTodo":
+        try {
+          // PUTリクエストで新しいTodoを登録
+          await axios.put<PutTodoRequest>(
+            `http://localhost:8080/todos/${editingTodo.todoId}`,
+            {
+              title: editingTodo.title,
+              content: editingTodo.content,
+              version: editingTodo.version,
+              tags: editingTodo.tags,
+            }
+          );
+        } catch (error) {
+          console.error("Todoの更新に失敗しました:", error);
+        }
+        break;
     }
     fetchTodos(); // 成功したら全todoをfetch
     handleCloseModal(); // 更新後モーダルを閉じる
   };
 
   // Todoカードをクリックしたときの処理（更新用）
-  const handleTodoClick = (todo: ExistingTodo): void => {
+  const handleTodoCardClick = (todo: PutTodoForm): void => {
     setEditingTodo(todo); // クリックされたTodoを編集対象に設定
     setIsModalOpen(true); // モーダルを開く
   };
 
   // ＋ボタンをクリックしたときの処理（新規作成用）
   const handleCreateButtonClick = (): void => {
-    setEditingTodo(iniTodo); // 新規作成のため編集対象を初期値に設定
+    setEditingTodo(newTodo); // 新規作成のため編集対象を初期値に設定
     setIsModalOpen(true); // モーダルを開く
   };
 
   // モーダルを閉じる処理
   const handleCloseModal = (): void => {
     setIsModalOpen(false); // モーダルを閉じる
-    setEditingTodo(iniTodo); // モーダルを閉じるときに編集対象をリセット
+    setEditingTodo(newTodo); // モーダルを閉じるときに編集対象をリセット
   };
 
   // 完了ボタンをクリックしたときの処理
-  const handleButtonClick = (
+  const handleCompButtonClick = (
     e: React.MouseEvent<HTMLButtonElement>,
-    completedTodo: ExistingTodo
+    completedTodo: PutTodoForm
   ): void => {
     e.stopPropagation(); // 親(Todoカード)へのクリック伝搬を止める
     setTodos((prev) =>
@@ -389,10 +412,6 @@ const TodoApp = () => {
   const search = (searchValue: string) => {
     // 実際にはここでAPIを呼び出し、結果に基づいてtodosを更新します
     console.log("Searching for:", searchValue);
-    // 例:
-    // fetch(`/api/todos?q=${searchValue}`)
-    //   .then(response => response.json())
-    //   .then(data => setTodos(data));
   };
 
   return (
@@ -409,9 +428,9 @@ const TodoApp = () => {
             todos.map((todo) => (
               <Todo
                 key={todo.todoId}
-                todo={todo}
-                onCardClick={handleTodoClick}
-                onCompButtonClick={handleButtonClick}
+                todo={{ ...todo, type: "existingTodo" }}
+                onTodoCardClick={handleTodoCardClick}
+                onCompButtonClick={handleCompButtonClick}
               />
             ))
           )}
@@ -420,7 +439,7 @@ const TodoApp = () => {
         {isModalOpen && (
           <Modal
             onClose={handleCloseModal}
-            onSubmit={handleTodoUpdate}
+            onSubmit={handleTodoSubmit}
             editingTodo={editingTodo}
             availableTags={availableTags}
           />
