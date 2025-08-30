@@ -318,7 +318,7 @@ const TodoApp = () => {
     fetchTodos();
   }, []);
 
-  // todo取得
+  // todoをfetch
   const fetchTodos = async (): Promise<void> => {
     try {
       const response = await axios.get<TodoResponse[]>(
